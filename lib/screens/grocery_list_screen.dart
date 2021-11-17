@@ -52,6 +52,8 @@ class GroceryListScreen extends StatelessWidget {
               ),
               onTap: () {
                 // TODO: Tap on grocery item
+                // Update existing grocery item
+                manager.groceryItemTapped(index);
               },
             ),
           );
