@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-// 1
+import 'app_cache.dart';
+
 class FooderlichTab {
   static const int explore = 0;
   static const int recipes = 1;
@@ -9,49 +11,42 @@ class FooderlichTab {
 }
 
 class AppStateManager extends ChangeNotifier {
-  // 2
   bool _initialized = false;
-
-  // 3
   bool _loggedIn = false;
-
-  // 4
   bool _onboardingComplete = false;
-
-  // selected Tab on home Screen
   int _selectedTab = FooderlichTab.explore;
+  final _appCache = AppCache();
 
-  // 6
   bool get isInitialized => _initialized;
-
   bool get isLoggedIn => _loggedIn;
-
   bool get isOnboardingComplete => _onboardingComplete;
-
   int get getSelectedTab => _selectedTab;
 
-  void initializeApp() {
-    // 7
+  void initializeApp() async {
+    //Depends on AppCache to check the user login and onboarding status.
+    // When the app calls initializeApp(),
+    //it checks the app cache to update the appropriate state.
+    _loggedIn = await _appCache.isUserLoggedIn();
+    _onboardingComplete = await _appCache.didCompleteOnboarding();
+
     Timer(
       const Duration(milliseconds: 2000),
-      () {
-        // 8
+          () {
         _initialized = true;
-        // 9
         notifyListeners();
       },
     );
   }
 
-  void login(String username, String password) {
-    // 10
+  void login(String username, String password) async {
     _loggedIn = true;
-    // 11
+    await _appCache.cacheUser();
     notifyListeners();
   }
 
-  void completeOnboarding() {
+  void completeOnboarding() async {
     _onboardingComplete = true;
+    await _appCache.completeOnboarding();
     notifyListeners();
   }
 
@@ -65,16 +60,12 @@ class AppStateManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
-    // 12
-    _loggedIn = false;
-    _onboardingComplete = false;
+  void logout() async {
     _initialized = false;
     _selectedTab = 0;
+    await _appCache.invalidate();
 
-    // 13
     initializeApp();
-    // 14
     notifyListeners();
   }
 }

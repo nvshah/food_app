@@ -47,4 +47,13 @@ class GroceryManager extends ChangeNotifier {
     _groceryItems[index] = item.copyWith(isComplete: change);
     notifyListeners();
   }
+
+  ///perform implicit tap for item with {id}
+  void setSelectedGroceryItem(String id) {
+    final index = groceryItems.indexWhere((element) => element.id == id);
+    _selectedIndex = index;
+    _createNewItem = false;
+    notifyListeners();
+  }
+
 }

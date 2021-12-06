@@ -8,11 +8,19 @@ import 'package:food_app/screens/splash_screen.dart';
 import 'package:food_app/screens/webview_screen.dart';
 
 import '../models/models.dart';
+import 'app_link.dart';
+
+/**
+ * Path: /home?tab=[index]   // redirects to Home Screen if only user has logged in !
+ * Path: /profile           // redirects to the Profile Screen
+ * Path: /item?id=[uuid]   // redirects to the Grocery Item screen
+ */
 
 // Widget = ChangeNotifier
 // The system will tell the router to build and configure a navigator widget.
-class AppRouter extends RouterDelegate
-      with ChangeNotifier, PopNavigatorRouterDelegateMixin {
+// AppLink encapsulate all the route information
+class AppRouter extends RouterDelegate<AppLink>
+    with ChangeNotifier, PopNavigatorRouterDelegateMixin {
   @override
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -83,9 +91,7 @@ class AppRouter extends RouterDelegate
           ProfileScreen.page(profileManager.getUser),
 
         // TODO: Add WebView Screen
-        if (profileManager.didTapOnRaywenderlich)
-          WebViewScreen.page(),
-
+        if (profileManager.didTapOnRaywenderlich) WebViewScreen.page(),
       ],
     );
   }
@@ -121,7 +127,69 @@ class AppRouter extends RouterDelegate
     return true;
   }
 
-  // 10
+  ///RouteInformationParser asks for the current navigation configuration,
+  ///so you must convert your app state to an AppLink.
+  ///Convert AppState back to URL
+
+  /// helper function that convert an app state -> App Link
+  AppLink getCurrentPath() {
+    // 1
+    if (!appStateManager.isLoggedIn) {
+      return AppLink(location: AppLink.loginPath);
+      // 2
+    } else if (!appStateManager.isOnboardingComplete) {
+      return AppLink(location: AppLink.onboardingPath);
+      // 3
+    } else if (profileManager.didSelectUser) {
+      return AppLink(location: AppLink.profilePath);
+      // 4
+    } else if (groceryManager.isCreatingNewItem) {
+      return AppLink(location: AppLink.itemPath);
+      // 5
+    } else if (groceryManager.selectedGroceryItem != null) {
+      final id = groceryManager.selectedGroceryItem?.id;
+      return AppLink(location: AppLink.itemPath, itemId: id);
+      // 6
+    } else {
+      return AppLink(
+          location: AppLink.homePath,
+          currentTab: appStateManager.getSelectedTab);
+    }
+  }
+
   @override
-  Future<void> setNewRoutePath(configuration) async => null;
+  AppLink get currentConfiguration => getCurrentPath();
+
+  /// URL -> to an AppState : perform action
+  @override
+  Future<void> setNewRoutePath(AppLink newLink) async {
+    /// It is being called when a new route is pushed
+    switch (newLink.location) {
+      case AppLink.profilePath:
+        profileManager.tapOnProfile(true);
+        break;
+      case AppLink.itemPath:
+        final itemId = newLink.itemId;
+        if (itemId != null) {
+          groceryManager.setSelectedGroceryItem(itemId);
+        } else {
+          // 6
+          groceryManager.createNewItem();
+        }
+        // 7
+        profileManager.tapOnProfile(false);
+        break;
+      // 8
+      case AppLink.homePath:
+        // 9
+        appStateManager.goToTab(newLink.currentTab ?? 0);
+        // 10
+        profileManager.tapOnProfile(false);
+        groceryManager.groceryItemTapped(-1);
+        break;
+      // 11
+      default:
+        break;
+    }
+  }
 }

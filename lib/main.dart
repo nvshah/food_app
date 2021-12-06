@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'fooderlich_theme.dart';
 import 'models/models.dart';
+import 'navigation/app_route_parser.dart';
 import 'screens/splash_screen.dart';
 import 'navigation/app_router.dart';
 
@@ -25,7 +26,9 @@ class _FooderlichState extends State<Fooderlich> {
   final _profileManager = ProfileManager();
   final _appStateManager = AppStateManager();
 
-  late AppRouter _appRouter;
+  late AppRouter _appRouter;   // will act when app state changes
+  final routeParser = AppRouteParser(); // will act to communicate back-forth between native & delegate side
+
 
 
   @override
@@ -72,6 +75,7 @@ class _FooderlichState extends State<Fooderlich> {
               //When the user taps the Android system Back button, it triggers the router delegate’s onPopPage callback.
               //Setting the router’s Back button dispatcher lets you listen to platform system events.
               backButtonDispatcher: RootBackButtonDispatcher(),
+              routeInformationParser: routeParser,
             ),
           );
         },
